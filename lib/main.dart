@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
-import 'Get_Started_Screen.dart';
+import 'package:nutri_track/Details_Screen.dart';
+import 'package:nutri_track/Login%20and%20Sign%20Up/Login_Screen.dart';
+import 'package:nutri_track/Get_Started_Screen.dart';
+import 'package:nutri_track/Login%20and%20Sign%20Up/Sign_Up_Screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -25,6 +28,9 @@ class MyApp extends StatelessWidget {
       initialRoute: '/',
       routes: {
         '/': (context) => GetStartedScreen(),
+        '/login': (context) => const LoginScreen(),
+        '/signup': (context) => const SignUpScreen(),
+        '/details': (context) => const DetailsScreen(),
       },
     );
   }
