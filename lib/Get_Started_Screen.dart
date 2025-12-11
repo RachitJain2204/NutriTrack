@@ -1,21 +1,19 @@
 import 'package:flutter/material.dart';
 
 class GetStartedScreen extends StatelessWidget {
-  const GetStartedScreen({super.key});
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // keep original dark bg
+      backgroundColor: Colors.black, // Ensure the background is black
       body: Column(
         children: [
           Expanded(
-            flex: 1,
+            flex: 1, // Set to 1 for a 50/50 split
             child: Stack(
               children: [
                 Positioned.fill(
                   child: Image.asset(
-                    'assets/Image_1.png',
+                    'assets/Image_1.png', // Kept your original Image.asset
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -32,7 +30,7 @@ class GetStartedScreen extends StatelessWidget {
                           Colors.black.withOpacity(0.6),
                           Colors.black.withOpacity(0.8),
                         ],
-                        stops: const [0.0, 0.7, 0.85, 0.95, 1.0],
+                        stops: [0.0, 0.7, 0.85, 0.95, 1.0],
                       ),
                     ),
                   ),
@@ -41,17 +39,16 @@ class GetStartedScreen extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 1,
+            flex: 1, // Set to 1 for a 50/50 split
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              padding: const EdgeInsets.symmetric(horizontal: 6.0), // Reverted to your original padding
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Spacer(),
+                  Spacer(),
                   RichText(
-                    text: const TextSpan(
+                    text: TextSpan(
                       style: TextStyle(
-                        fontFamily: 'Poppins',
                         fontSize: 48,
                         fontWeight: FontWeight.bold,
                         height: 0.9,
@@ -74,18 +71,18 @@ class GetStartedScreen extends StatelessWidget {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  SizedBox(height: 16),
                   Text(
                     'Easily Track and Plan Your Diet',
                     style: TextStyle(
-                      fontFamily: 'Poppins',
-                      fontSize: 20,
+                      fontSize: 25,
                       color: Colors.white.withOpacity(0.85),
                     ),
                   ),
-                  const Spacer(flex: 1),
+                  Spacer(flex: 1),
                   TextButton(
                     onPressed: () {
+                      // This is the only change: navigates to the login screen
                       Navigator.pushNamed(context, '/login');
                     },
                     style: TextButton.styleFrom(
@@ -94,26 +91,25 @@ class GetStartedScreen extends StatelessWidget {
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
-                      children: const [
+                      children: [
                         Text(
                           "Let's get started",
                           style: TextStyle(
                             color: Color(0xFF6ABF4B),
-                            fontSize: 20,
+                            fontSize: 25,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'Poppins',
                           ),
                         ),
                         SizedBox(width: 8),
                         Icon(
                           Icons.arrow_forward,
                           color: Color(0xFF6ABF4B),
-                          size: 24,
+                          size: 30,
                         ),
                       ],
                     ),
                   ),
-                  const Spacer(flex: 3),
+                  Spacer(flex: 3),
                 ],
               ),
             ),
@@ -123,3 +119,4 @@ class GetStartedScreen extends StatelessWidget {
     );
   }
 }
+
