@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_track/Details_Screen.dart';
-import 'package:nutri_track/Login%20and%20Sign%20Up/Login_Screen.dart';
-import 'package:nutri_track/Get_Started_Screen.dart';
-import 'package:nutri_track/Login%20and%20Sign%20Up/Sign_Up_Screen.dart';
+import 'package:nutri_track/Features/Auth/Login_Screen.dart';
+import 'package:nutri_track/Features/Auth/Sign_Up_Screen.dart';
+import 'package:nutri_track/Features/OnBoarding/Get_Started_Screen.dart';
+import 'package:nutri_track/Features/Profile_Setup/Details_Screen.dart';
 import 'package:nutri_track/Profile.dart';
 
 void main() {
