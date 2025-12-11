@@ -1,22 +1,74 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_track/services/api_service.dart';
 
-class LoginScreen extends StatelessWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
+
+  @override
+  State<LoginScreen> createState() => _LoginScreenState();
+}
+
+class _LoginScreenState extends State<LoginScreen> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+
+  bool _passwordVisible = false;
+  bool _isLoading = false;
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _showSnackBar(String message, {bool isError = true}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? const Color(0xFF6ABF4B) : Colors.green,
+      ),
+    );
+  }
+
+  Future<void> _login() async {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text.trim();
+
+    if (email.isEmpty || password.isEmpty) {
+      _showSnackBar('Please enter email and password');
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      await ApiService.login(email: email, password: password);
+
+      _showSnackBar('Login successful', isError: false);
+
+      // after login, you can navigate wherever you want
+      // for now, let's go to Details screen to set/update profile
+      Navigator.pushNamed(context, '/profile');
+    } catch (e) {
+      _showSnackBar(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      // Use a SingleChildScrollView to prevent overflow when the keyboard appears
       body: SingleChildScrollView(
         child: Container(
-          // Set height to the full screen height
           height: MediaQuery.of(context).size.height,
           padding: const EdgeInsets.symmetric(horizontal: 24.0),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: <Widget>[
-              // Logo
               RichText(
                 textAlign: TextAlign.center,
                 text: const TextSpan(
@@ -45,8 +97,6 @@ class LoginScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 48.0),
-
-              // Welcome Back Text
               Text(
                 'Welcome Back!',
                 textAlign: TextAlign.center,
@@ -67,14 +117,17 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 40.0),
 
-              // Email or Phone TextField
               TextField(
+                controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Email or Phone Number',
+                  labelText: 'Email',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF6ABF4B)),
+                  prefixIcon: const Icon(
+                    Icons.person_outline,
+                    color: Color(0xFF6ABF4B),
+                  ),
                   filled: true,
                   fillColor: Colors.grey.withOpacity(0.1),
                   border: OutlineInputBorder(
@@ -85,14 +138,30 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 20.0),
 
-              // Password TextField
               TextField(
-                obscureText: true,
+                controller: _passwordController,
+                obscureText: !_passwordVisible,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: 'Password',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF6ABF4B)),
+                  prefixIcon: const Icon(
+                    Icons.lock_outline,
+                    color: Color(0xFF6ABF4B),
+                  ),
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _passwordVisible
+                          ? Icons.visibility
+                          : Icons.visibility_off,
+                      color: Colors.white70,
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _passwordVisible = !_passwordVisible;
+                      });
+                    },
+                  ),
                   filled: true,
                   fillColor: Colors.grey.withOpacity(0.1),
                   border: OutlineInputBorder(
@@ -103,12 +172,11 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 12.0),
 
-              // Forgot Password
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
                   onPressed: () {
-                    // TODO: Implement forgot password functionality
+                    // TODO: Forgot password
                   },
                   child: const Text(
                     'Forgot Password?',
@@ -121,7 +189,6 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24.0),
 
-              // Login Button
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6ABF4B),
@@ -130,10 +197,18 @@ class LoginScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                 ),
-                onPressed: () {
-                  // TODO: Implement login logic
-                },
-                child: const Text(
+                onPressed: _isLoading ? null : _login,
+                child: _isLoading
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                    AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                    : const Text(
                   'Login',
                   style: TextStyle(
                     fontSize: 18.0,
@@ -144,7 +219,6 @@ class LoginScreen extends StatelessWidget {
               ),
               const SizedBox(height: 24.0),
 
-              // Sign Up option
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -177,4 +251,3 @@ class LoginScreen extends StatelessWidget {
     );
   }
 }
-

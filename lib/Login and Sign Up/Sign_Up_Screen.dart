@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nutri_track/services/api_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -8,14 +9,13 @@ class SignUpScreen extends StatefulWidget {
 }
 
 class _SignUpScreenState extends State<SignUpScreen> {
-  // Controllers
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
-  // Visibility Toggle States
   bool _passwordVisible = false;
   bool _confirmPasswordVisible = false;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -25,54 +25,72 @@ class _SignUpScreenState extends State<SignUpScreen> {
     super.dispose();
   }
 
-  void _showErrorSnackBar(String message) {
+  void _showSnackBar(String message, {bool isError = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: const Color(0xFF6ABF4B),
+        backgroundColor: isError ? const Color(0xFF6ABF4B) : Colors.green,
       ),
     );
   }
 
-  void _validateAndSignUp() {
+  Future<void> _validateAndSignUp() async {
     final email = _emailController.text.trim();
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
     if (email.isEmpty) {
-      _showErrorSnackBar('Email is required');
+      _showSnackBar('Email is required');
       return;
     }
 
-    // IIITU email validation
     final iiituEmailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@iiitu\.ac\.in$');
     if (!iiituEmailRegex.hasMatch(email)) {
-      _showErrorSnackBar('Please enter a valid email ending with @iiitu.ac.in');
+      _showSnackBar('Please enter a valid email ending with @iiitu.ac.in');
       return;
     }
 
     if (password.isEmpty) {
-      _showErrorSnackBar('Please create a password');
+      _showSnackBar('Please create a password');
       return;
     }
 
     if (password.length < 8) {
-      _showErrorSnackBar('Password must be at least 8 characters long');
+      _showSnackBar('Password must be at least 8 characters long');
       return;
     }
 
     if (confirmPassword.isEmpty) {
-      _showErrorSnackBar('Please confirm your password');
+      _showSnackBar('Please confirm your password');
       return;
     }
 
     if (password != confirmPassword) {
-      _showErrorSnackBar('Passwords do not match');
+      _showSnackBar('Passwords do not match');
       return;
     }
 
-    Navigator.pushNamed(context, '/details');
+    setState(() => _isLoading = true);
+    try {
+      // 1) Register user
+      await ApiService.register(email: email, password: password);
+
+      // 2) Immediately login to get token
+      await ApiService.login(email: email, password: password);
+
+      _showSnackBar('Account created and logged in', isError: false);
+
+      // 3) Now go to DetailsScreen (token is present)
+      Navigator.pushNamed(context, '/details');
+    } catch (e) {
+      _showSnackBar(e.toString());
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -115,7 +133,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 ),
               ),
               const SizedBox(height: 48.0),
-
               Text(
                 'Create an Account',
                 textAlign: TextAlign.center,
@@ -136,7 +153,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 40.0),
 
-              // EMAIL FIELD
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
@@ -146,8 +162,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   hintText: 'yourid@iiitu.ac.in',
                   hintStyle: TextStyle(color: Colors.white.withOpacity(0.4)),
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  prefixIcon:
-                  const Icon(Icons.person_outline, color: Color(0xFF6ABF4B)),
+                  prefixIcon: const Icon(
+                    Icons.person_outline,
+                    color: Color(0xFF6ABF4B),
+                  ),
                   filled: true,
                   fillColor: Colors.grey.withOpacity(0.1),
                   border: OutlineInputBorder(
@@ -158,7 +176,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 20.0),
 
-              // PASSWORD FIELD (with toggle)
               TextField(
                 controller: _passwordController,
                 obscureText: !_passwordVisible,
@@ -166,8 +183,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 decoration: InputDecoration(
                   labelText: 'Create New Password',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  prefixIcon:
-                  const Icon(Icons.lock_outline, color: Color(0xFF6ABF4B)),
+                  prefixIcon: const Icon(
+                    Icons.lock_outline,
+                    color: Color(0xFF6ABF4B),
+                  ),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _passwordVisible
@@ -191,7 +210,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
               ),
               const SizedBox(height: 20.0),
 
-              // CONFIRM PASSWORD FIELD (with toggle)
               TextField(
                 controller: _confirmPasswordController,
                 obscureText: !_confirmPasswordVisible,
@@ -199,8 +217,10 @@ class _SignUpScreenState extends State<SignUpScreen> {
                 decoration: InputDecoration(
                   labelText: 'Confirm Password',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  prefixIcon:
-                  const Icon(Icons.lock_outline, color: Color(0xFF6ABF4B)),
+                  prefixIcon: const Icon(
+                    Icons.lock_outline,
+                    color: Color(0xFF6ABF4B),
+                  ),
                   suffixIcon: IconButton(
                     icon: Icon(
                       _confirmPasswordVisible
@@ -210,8 +230,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     ),
                     onPressed: () {
                       setState(() {
-                        _confirmPasswordVisible =
-                        !_confirmPasswordVisible;
+                        _confirmPasswordVisible = !_confirmPasswordVisible;
                       });
                     },
                   ),
@@ -233,8 +252,18 @@ class _SignUpScreenState extends State<SignUpScreen> {
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                 ),
-                onPressed: _validateAndSignUp,
-                child: const Text(
+                onPressed: _isLoading ? null : _validateAndSignUp,
+                child: _isLoading
+                    ? const SizedBox(
+                  height: 20,
+                  width: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor:
+                    AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                )
+                    : const Text(
                   'Sign Up',
                   style: TextStyle(
                     fontSize: 18.0,

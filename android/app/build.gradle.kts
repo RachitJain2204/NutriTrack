@@ -8,7 +8,9 @@ plugins {
 android {
     namespace = "com.example.nutri_track"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+
+    // Use the higher NDK version required by shared_preferences_android
+    ndkVersion = "27.0.12077973"
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
