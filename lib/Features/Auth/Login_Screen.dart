@@ -11,7 +11,6 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-
   bool _passwordVisible = false;
   bool _isLoading = false;
 
@@ -22,45 +21,35 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _showSnackBar(String message, {bool isError = true}) {
+  void _showSnackBar(String message, {bool error = true}) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? const Color(0xFF6ABF4B) : Colors.green,
-      ),
+      SnackBar(content: Text(message), backgroundColor: error ? const Color(0xFF6ABF4B) : Colors.green),
     );
   }
 
   Future<void> _login() async {
     final email = _emailController.text.trim();
-    final password = _passwordController.text.trim();
-
-    if (email.isEmpty || password.isEmpty) {
+    final pass = _passwordController.text.trim();
+    if (email.isEmpty || pass.isEmpty) {
       _showSnackBar('Please enter email and password');
       return;
     }
-
     setState(() => _isLoading = true);
     try {
-      await ApiService.login(email: email, password: password);
-
-      _showSnackBar('Login successful', isError: false);
-
-      // after login, you can navigate wherever you want
-      // for now, let's go to Details screen to set/update profile
-      Navigator.pushNamed(context, '/profile');
+      await ApiService.login(email: email, password: pass);
+      _showSnackBar('Login successful', error: false);
+      Navigator.pushNamedAndRemoveUntil(context, '/main', (r) => false);
     } catch (e) {
       _showSnackBar(e.toString());
     } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      // keep original single column layout but tidy spacing and fonts
       body: SingleChildScrollView(
         child: Container(
           height: MediaQuery.of(context).size.height,
@@ -96,11 +85,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   ],
                 ),
               ),
-              const SizedBox(height: 48.0),
+              const SizedBox(height: 40.0),
+
               Text(
                 'Welcome Back!',
                 textAlign: TextAlign.center,
                 style: TextStyle(
+                  fontFamily: 'Poppins',
                   color: Colors.white.withOpacity(0.9),
                   fontSize: 24.0,
                   fontWeight: FontWeight.bold,
@@ -111,23 +102,22 @@ class _LoginScreenState extends State<LoginScreen> {
                 'Please sign in to your account',
                 textAlign: TextAlign.center,
                 style: TextStyle(
+                  fontFamily: 'Poppins',
                   color: Colors.white.withOpacity(0.7),
                   fontSize: 16.0,
                 ),
               ),
-              const SizedBox(height: 40.0),
+              const SizedBox(height: 36.0),
 
+              // Email
               TextField(
                 controller: _emailController,
                 keyboardType: TextInputType.emailAddress,
                 style: const TextStyle(color: Colors.white),
                 decoration: InputDecoration(
-                  labelText: 'Email',
+                  labelText: 'Email or Phone Number',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  prefixIcon: const Icon(
-                    Icons.person_outline,
-                    color: Color(0xFF6ABF4B),
-                  ),
+                  prefixIcon: const Icon(Icons.person_outline, color: Color(0xFF6ABF4B)),
                   filled: true,
                   fillColor: Colors.grey.withOpacity(0.1),
                   border: OutlineInputBorder(
@@ -136,8 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                 ),
               ),
-              const SizedBox(height: 20.0),
+              const SizedBox(height: 18.0),
 
+              // Password
               TextField(
                 controller: _passwordController,
                 obscureText: !_passwordVisible,
@@ -145,22 +136,10 @@ class _LoginScreenState extends State<LoginScreen> {
                 decoration: InputDecoration(
                   labelText: 'Password',
                   labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  prefixIcon: const Icon(
-                    Icons.lock_outline,
-                    color: Color(0xFF6ABF4B),
-                  ),
+                  prefixIcon: const Icon(Icons.lock_outline, color: Color(0xFF6ABF4B)),
                   suffixIcon: IconButton(
-                    icon: Icon(
-                      _passwordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
-                      color: Colors.white70,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _passwordVisible = !_passwordVisible;
-                      });
-                    },
+                    icon: Icon(_passwordVisible ? Icons.visibility : Icons.visibility_off, color: Colors.white70),
+                    onPressed: () => setState(() => _passwordVisible = !_passwordVisible),
                   ),
                   filled: true,
                   fillColor: Colors.grey.withOpacity(0.1),
@@ -175,72 +154,32 @@ class _LoginScreenState extends State<LoginScreen> {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () {
-                    // TODO: Forgot password
-                  },
-                  child: const Text(
-                    'Forgot Password?',
-                    style: TextStyle(
-                      color: Color(0xFF6ABF4B),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
+                  onPressed: () {},
+                  child: const Text('Forgot Password?', style: TextStyle(color: Color(0xFF6ABF4B))),
                 ),
               ),
-              const SizedBox(height: 24.0),
+              const SizedBox(height: 18.0),
 
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF6ABF4B),
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
                 ),
                 onPressed: _isLoading ? null : _login,
                 child: _isLoading
-                    ? const SizedBox(
-                  height: 20,
-                  width: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-                    : const Text(
-                  'Login',
-                  style: TextStyle(
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                ),
+                    ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('Login', style: TextStyle(fontSize: 18.0, fontWeight: FontWeight.bold, color: Colors.white)),
               ),
-              const SizedBox(height: 24.0),
+              const SizedBox(height: 20.0),
 
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    "Don't have an account? ",
-                    style: TextStyle(color: Colors.white.withOpacity(0.7)),
-                  ),
+                  Text("Don't have an account? ", style: TextStyle(color: Colors.white.withOpacity(0.7))),
                   TextButton(
-                    onPressed: () {
-                      Navigator.pushNamed(context, '/signup');
-                    },
-                    style: TextButton.styleFrom(
-                      padding: EdgeInsets.zero,
-                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                    ),
-                    child: const Text(
-                      'Sign Up',
-                      style: TextStyle(
-                        color: Color(0xFF6ABF4B),
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
+                    onPressed: () => Navigator.pushNamed(context, '/signup'),
+                    child: const Text('Sign Up', style: TextStyle(color: Color(0xFF6ABF4B), fontWeight: FontWeight.bold)),
                   ),
                 ],
               ),
