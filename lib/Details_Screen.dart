@@ -15,6 +15,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
   final _weightController = TextEditingController();
   final _heightController = TextEditingController();
   final _targetWeightController = TextEditingController();
+  final _ageController = TextEditingController();
+  final _timesWeekController = TextEditingController(); // Weeks to reach target
 
   // State variables for dropdown and radio buttons
   String? _selectedLanguage;
@@ -31,6 +33,8 @@ class _DetailsScreenState extends State<DetailsScreen> {
     _weightController.dispose();
     _heightController.dispose();
     _targetWeightController.dispose();
+    _ageController.dispose();
+    _timesWeekController.dispose();
     super.dispose();
   }
 
@@ -40,7 +44,7 @@ class _DetailsScreenState extends State<DetailsScreen> {
       SnackBar(
         content: Text(message),
         backgroundColor:
-        isError ? const Color(0xFF6ABF4B) : Colors.green,
+        isError ? const Color(0xFFB00020) : const Color(0xFF6ABF4B),
       ),
     );
   }
@@ -64,6 +68,14 @@ class _DetailsScreenState extends State<DetailsScreen> {
       _showErrorSnackBar('Target Weight is required');
       return;
     }
+    if (_ageController.text.trim().isEmpty) {
+      _showErrorSnackBar('Age is required');
+      return;
+    }
+    if (_timesWeekController.text.trim().isEmpty) {
+      _showErrorSnackBar('Please enter weeks to reach target weight');
+      return;
+    }
 
     // Check dropdowns and radio buttons
     if (_selectedLanguage == null) {
@@ -85,12 +97,23 @@ class _DetailsScreenState extends State<DetailsScreen> {
 
     final weight = double.tryParse(_weightController.text.trim());
     final height = double.tryParse(_heightController.text.trim());
-    final targetWeight =
-    double.tryParse(_targetWeightController.text.trim());
+    final targetWeight = double.tryParse(_targetWeightController.text.trim());
+    final age = int.tryParse(_ageController.text.trim());
+    final timesWeek = int.tryParse(_timesWeekController.text.trim());
 
     if (weight == null || height == null || targetWeight == null) {
       _showErrorSnackBar(
           'Please enter valid numeric values for weight, height and target weight');
+      return;
+    }
+
+    if (age == null || age <= 0 || age > 120) {
+      _showErrorSnackBar('Please enter a valid age');
+      return;
+    }
+
+    if (timesWeek == null || timesWeek <= 0) {
+      _showErrorSnackBar('Please enter a valid number of weeks for your goal');
       return;
     }
 
@@ -107,11 +130,13 @@ class _DetailsScreenState extends State<DetailsScreen> {
         gender: _selectedGender!,
         dietaryPreference: _selectedDiet!,
         activityLevel: _selectedActivityLevel!,
+        age: age,
+        TimesWeek: timesWeek, // matches ApiService parameter
       );
 
       _showErrorSnackBar('Profile updated successfully', isError: false);
 
-      // Go back to start screen (or change to HomeScreen later)
+      // Go to profile screen (replace stack)
       Navigator.pushNamedAndRemoveUntil(context, '/profile', (route) => false);
     } catch (e) {
       _showErrorSnackBar(e.toString());
@@ -194,6 +219,30 @@ class _DetailsScreenState extends State<DetailsScreen> {
                 icon: Icons.flag_outlined,
                 keyboardType: TextInputType.number,
                 controller: _targetWeightController,
+              ),
+              const SizedBox(height: 20.0),
+
+              // Age and TimesWeek row
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildTextField(
+                      label: 'Age',
+                      icon: Icons.cake,
+                      keyboardType: TextInputType.number,
+                      controller: _ageController,
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  Expanded(
+                    child: _buildTextField(
+                      label: 'Times (weeks)',
+                      icon: Icons.calendar_month,
+                      keyboardType: TextInputType.number,
+                      controller: _timesWeekController,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 20.0),
 

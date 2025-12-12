@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nutri_track/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -44,11 +45,12 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await ApiService.login(email: email, password: password);
 
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('seen_get_started', true);
+
       _showSnackBar('Login successful', isError: false);
 
-      // after login, you can navigate wherever you want
-      // for now, let's go to Details screen to set/update profile
-      Navigator.pushNamed(context, '/profile');
+      Navigator.pushReplacementNamed(context, '/profile');
     } catch (e) {
       _showSnackBar(e.toString());
     } finally {
@@ -57,6 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {

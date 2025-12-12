@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:nutri_track/services/api_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -71,17 +72,19 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     setState(() => _isLoading = true);
+
     try {
-      // 1) Register user
       await ApiService.register(email: email, password: password);
 
-      // 2) Immediately login to get token
       await ApiService.login(email: email, password: password);
+
+      // mark onboarding screen as seen
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('seen_get_started', true);
 
       _showSnackBar('Account created and logged in', isError: false);
 
-      // 3) Now go to DetailsScreen (token is present)
-      Navigator.pushNamed(context, '/details');
+      Navigator.pushReplacementNamed(context, '/details');
     } catch (e) {
       _showSnackBar(e.toString());
     } finally {
@@ -90,7 +93,6 @@ class _SignUpScreenState extends State<SignUpScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {

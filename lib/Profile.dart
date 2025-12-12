@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:nutri_track/services/api_service.dart';
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  const ProfileScreen({Key? key}) : super(key: key);
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -11,13 +11,15 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   late Future<Map<String, dynamic>> _userFuture;
 
+  final Color _nutriGreen = const Color(0xFF6ABF4B);
+
   @override
   void initState() {
     super.initState();
     _userFuture = ApiService.getCurrentUser();
   }
 
-  void _refreshProfile() {
+  void _refresh() {
     setState(() {
       _userFuture = ApiService.getCurrentUser();
     });
@@ -27,7 +29,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? const Color(0xFF6ABF4B) : Colors.green,
+        backgroundColor: isError ? Colors.redAccent : _nutriGreen,
       ),
     );
   }
@@ -38,27 +40,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
   }
 
+  Widget _sectionTitle(String title) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6.0),
+      child: Text(
+        title,
+        style: TextStyle(
+          color: Colors.white.withOpacity(0.9),
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
+  Widget _infoTile(String label, String value) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            label,
+            style: TextStyle(color: Colors.white.withOpacity(0.8)),
+          ),
+        ),
+        Text(
+          value,
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your Profile'),
-        backgroundColor: Colors.black,
-        actions: [
-          IconButton(
-            onPressed: _refreshProfile,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
       backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: _nutriGreen,
+        elevation: 0,
+        title: const Text('Profile'),
+      ),
       body: FutureBuilder<Map<String, dynamic>>(
         future: _userFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF6ABF4B)),
+                valueColor:
+                AlwaysStoppedAnimation<Color>(Color(0xFF6ABF4B)),
               ),
             );
           }
@@ -70,221 +102,142 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.error_outline, color: Colors.red, size: 40),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Failed to load profile',
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.9),
-                        fontSize: 18,
-                      ),
-                    ),
+                    Icon(Icons.error_outline, size: 44, color: Colors.redAccent),
+                    const SizedBox(height: 12),
+                    Text('Failed to load profile', style: TextStyle(color: Colors.white.withOpacity(0.9), fontSize: 16)),
                     const SizedBox(height: 8),
-                    Text(
-                      snapshot.error.toString(),
-                      style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
-                        fontSize: 14,
-                      ),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 20),
-                    ElevatedButton(
-                      onPressed: _refreshProfile,
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF6ABF4B),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                      child: const Text('Retry'),
-                    ),
+                    Text(snapshot.error.toString(), style: TextStyle(color: Colors.white.withOpacity(0.7)), textAlign: TextAlign.center),
+                    const SizedBox(height: 16),
+                    ElevatedButton(onPressed: _refresh, style: ElevatedButton.styleFrom(backgroundColor: _nutriGreen), child: const Text('Retry'))
                   ],
                 ),
               ),
             );
           }
 
-          if (!snapshot.hasData || snapshot.data == null) {
-            return Center(
-              child: Text(
-                'No profile data found',
-                style: TextStyle(
-                  color: Colors.white.withOpacity(0.8),
-                  fontSize: 16,
-                ),
-              ),
-            );
-          }
-
-          final user = snapshot.data!;
-          final name = user['name'] ?? 'User';
-          final email = user['email'] ?? '';
-          final username = user['username'] ?? '';
+          final user = snapshot.data ?? {};
+          final name = (user['name'] ?? user['username'] ?? 'User').toString();
+          final email = (user['email'] ?? '').toString();
           final weight = user['weight']?.toString() ?? '-';
           final height = user['height']?.toString() ?? '-';
-          final targetWeight = user['targetWeight']?.toString() ?? '-';
-          final gender = user['gender'] ?? '-';
-          final dietaryPreference = user['dietaryPreference'] ?? '-';
-          final activityLevel = user['activityLevel'] ?? '-';
+          final target = user['targetWeight']?.toString() ?? '-';
+          final gender = (user['gender'] ?? '-').toString();
+          final diet = (user['dietaryPreference'] ?? '-').toString();
+          final activity = (user['activityLevel'] ?? '-').toString();
+          final age = user['age']?.toString() ?? '-';
+          final timesWeek = user['TimesWeek']?.toString() ?? '-';
 
           return SingleChildScrollView(
-            padding: const EdgeInsets.all(24.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Center(
+                // header card
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(color: Colors.white12),
+                  ),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: const Color(0xFF6ABF4B),
-                        child: Text(
-                          name.toString().isNotEmpty
-                              ? name.toString()[0].toUpperCase()
-                              : 'N',
-                          style: const TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
+                      Text('Welcome back,', style: TextStyle(color: Colors.white.withOpacity(0.8))),
+                      const SizedBox(height: 8),
+                      Text(name, style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 6),
+                      if (email.isNotEmpty) Text(email, style: TextStyle(color: Colors.white.withOpacity(0.7))),
+                      const SizedBox(height: 12),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          ElevatedButton.icon(
+                            onPressed: () => Navigator.pushReplacementNamed(context, '/details'),
+                            icon: const Icon(Icons.edit, size: 18),
+                            label: const Text('Edit profile'),
+                            style: ElevatedButton.styleFrom(backgroundColor: _nutriGreen, shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10))),
                           ),
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        name.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 22,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (email.isNotEmpty)
-                        Text(
-                          email.toString(),
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.7),
-                            fontSize: 14,
+                          OutlinedButton.icon(
+                            onPressed: _logout,
+                            icon: const Icon(Icons.logout),
+                            label: const Text('Logout'),
+                            style: OutlinedButton.styleFrom(
+                              side: BorderSide(color: Colors.white12),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
                           ),
-                        ),
-                      if (username.toString().isNotEmpty)
-                        Text(
-                          '@$username',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.6),
-                            fontSize: 13,
-                          ),
-                        ),
+                        ],
+                      )
                     ],
                   ),
                 ),
-                const SizedBox(height: 24),
 
-                Text(
-                  'Body stats',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                _buildCard(
-                  children: [
-                    _buildStatRow('Weight', '$weight kg', Icons.monitor_weight),
-                    const Divider(color: Colors.white24),
-                    _buildStatRow('Height', '$height cm', Icons.height),
-                    const Divider(color: Colors.white24),
-                    _buildStatRow('Target Weight', '$targetWeight kg',
-                        Icons.flag_outlined),
-                  ],
-                ),
+                const SizedBox(height: 18),
 
-                const SizedBox(height: 24),
-                Text(
-                  'Preferences',
-                  style: TextStyle(
-                    color: Colors.white.withOpacity(0.9),
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
+                // Body stats card
+                _sectionTitle('Body stats'),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: Colors.grey.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white12)),
+                  child: Column(
+                    children: [
+                      _infoTile('Age', '$age'),
+                      const SizedBox(height: 10),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 10),
+                      _infoTile('Weight', '$weight kg'),
+                      const SizedBox(height: 10),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 10),
+                      _infoTile('Height', '$height cm'),
+                      const SizedBox(height: 10),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 10),
+                      _infoTile('Target weight', '$target kg'),
+                    ],
                   ),
-                ),
-                const SizedBox(height: 8),
-                _buildCard(
-                  children: [
-                    _buildStatRow('Gender', gender.toString(), Icons.person),
-                    const Divider(color: Colors.white24),
-                    _buildStatRow('Diet',
-                        dietaryPreference.toString(), Icons.restaurant),
-                    const Divider(color: Colors.white24),
-                    _buildStatRow('Activity level',
-                        activityLevel.toString(), Icons.directions_run),
-                  ],
                 ),
 
-                const SizedBox(height: 32),
-                ElevatedButton.icon(
-                  onPressed: _logout,
-                  icon: const Icon(Icons.logout),
-                  label: const Text(
-                    'Logout',
-                    style: TextStyle(fontSize: 16),
+                const SizedBox(height: 18),
+
+                // Preferences card
+                _sectionTitle('Preferences'),
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(color: Colors.grey.withOpacity(0.06), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white12)),
+                  child: Column(
+                    children: [
+                      _infoTile('Gender', gender),
+                      const SizedBox(height: 10),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 10),
+                      _infoTile('Diet', diet),
+                      const SizedBox(height: 10),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 10),
+                      _infoTile('Activity', activity),
+                      const SizedBox(height: 10),
+                      const Divider(color: Colors.white12),
+                      const SizedBox(height: 10),
+                    ],
                   ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.redAccent,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
+                ),
+
+                const SizedBox(height: 26),
+                const SizedBox(height: 30),
+
+                // footer
+                Center(
+                  child: Text('NutriTrack • v1.0', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 12)),
                 ),
               ],
             ),
           );
         },
       ),
-    );
-  }
-
-  Widget _buildCard({required List<Widget> children}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: BoxDecoration(
-        color: Colors.grey[900],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        children: children,
-      ),
-    );
-  }
-
-  Widget _buildStatRow(String label, String value, IconData icon) {
-    return Row(
-      children: [
-        Icon(icon, color: const Color(0xFF6ABF4B), size: 22),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Text(
-            label,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.85),
-              fontSize: 15,
-            ),
-          ),
-        ),
-        const SizedBox(width: 8),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 15,
-            fontWeight: FontWeight.w600,
-          ),
-        ),
-      ],
     );
   }
 }

@@ -1,22 +1,18 @@
+// ApiService.dart
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  // Your backend base URL
   static const String baseUrl = 'https://nutritrack-backend-lghm.onrender.com';
-
   static const String _tokenKey = 'auth_token';
 
-  // Save token locally
   static Future<void> _saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_tokenKey, token);
-    // Optional: print to debug console
     print('Token saved: $token');
   }
 
-  // Get token
   static Future<String?> getToken() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString(_tokenKey);
@@ -24,14 +20,12 @@ class ApiService {
     return token;
   }
 
-  // Clear token
   static Future<void> clearToken() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_tokenKey);
     print('Token cleared');
   }
 
-  // Helper: try to find token in different possible keys
   static String? _extractTokenFromMap(Map<String, dynamic> data) {
     final possibleKeys = [
       'token',
@@ -44,19 +38,14 @@ class ApiService {
 
     for (final key in possibleKeys) {
       final value = data[key];
-      if (value is String && value.isNotEmpty) {
-        return value;
-      }
+      if (value is String && value.isNotEmpty) return value;
     }
 
-    // Sometimes backend may nest token inside 'data'
     if (data['data'] is Map<String, dynamic>) {
       final nested = data['data'] as Map<String, dynamic>;
       for (final key in possibleKeys) {
         final value = nested[key];
-        if (value is String && value.isNotEmpty) {
-          return value;
-        }
+        if (value is String && value.isNotEmpty) return value;
       }
     }
 
@@ -66,19 +55,15 @@ class ApiService {
   static String _extractErrorMessage(http.Response response) {
     try {
       final data = jsonDecode(response.body);
-      if (data is Map && data['message'] is String) {
-        return data['message'];
-      }
-      if (data is Map && data['error'] is String) {
-        return data['error'];
-      }
+      if (data is Map && data['message'] is String) return data['message'];
+      if (data is Map && data['error'] is String) return data['error'];
       return 'Error: ${response.statusCode}';
     } catch (_) {
       return 'Error: ${response.statusCode}';
     }
   }
 
-  // REGISTER: POST /api/auth/register
+  // REGISTER
   static Future<void> register({
     required String email,
     required String password,
@@ -90,38 +75,28 @@ class ApiService {
 
     final response = await http.post(
       url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'username': username,
-        'email': email,
-        'password': password,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'email': email, 'password': password}),
     );
 
     print('REGISTER status: ${response.statusCode}');
     print('REGISTER body: ${response.body}');
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      // Some backends also send token on register.
       try {
         final data = jsonDecode(response.body);
         if (data is Map<String, dynamic>) {
           final token = _extractTokenFromMap(data);
-          if (token != null) {
-            await _saveToken(token);
-          }
+          if (token != null) await _saveToken(token);
         }
-      } catch (_) {
-        // if response is not JSON or has no token, ignore
-      }
-    } else {
-      throw Exception(_extractErrorMessage(response));
+      } catch (_) {}
+      return;
     }
+
+    throw Exception(_extractErrorMessage(response));
   }
 
-  // LOGIN: POST /api/auth/login
+  // LOGIN
   static Future<void> login({
     required String email,
     required String password,
@@ -132,35 +107,33 @@ class ApiService {
 
     final response = await http.post(
       url,
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'email': email,
-        'password': password,
-      }),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'password': password}),
     );
 
     print('LOGIN status: ${response.statusCode}');
     print('LOGIN body: ${response.body}');
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      final data = jsonDecode(response.body);
-      if (data is Map<String, dynamic>) {
-        final token = _extractTokenFromMap(data);
-        if (token == null) {
-          throw Exception('Token not found in login response');
+      try {
+        final data = jsonDecode(response.body);
+        if (data is Map<String, dynamic>) {
+          final token = _extractTokenFromMap(data);
+          if (token == null) throw Exception('Token not found in login response');
+          await _saveToken(token);
+          return;
+        } else {
+          throw Exception('Unexpected login response format');
         }
-        await _saveToken(token);
-      } else {
-        throw Exception('Unexpected login response format');
+      } catch (e) {
+        throw Exception('Failed to parse login response: $e');
       }
-    } else {
-      throw Exception(_extractErrorMessage(response));
     }
+
+    throw Exception(_extractErrorMessage(response));
   }
 
-  // UPDATE PROFILE: PUT /api/user/profile
+  // UPDATE PROFILE — includes age and TimesWeek (weeks to reach target)
   static Future<void> updateProfile({
     required String name,
     required double weight,
@@ -169,11 +142,11 @@ class ApiService {
     required String gender,
     required String dietaryPreference,
     required String activityLevel,
+    required int age,
+    required int TimesWeek, // named parameter must match your call
   }) async {
     final token = await getToken();
-    if (token == null) {
-      throw Exception('Not authenticated. Please login again.');
-    }
+    if (token == null) throw Exception('Not authenticated. Please login again.');
 
     final url = Uri.parse('$baseUrl/api/user/profile');
 
@@ -194,6 +167,8 @@ class ApiService {
         'gender': gender.toLowerCase(),
         'dietaryPreference': dietaryPreference.toLowerCase(),
         'activityLevel': activityLevel,
+        'age': age,
+        'TimesWeek': TimesWeek,
       }),
     );
 
@@ -205,12 +180,10 @@ class ApiService {
     }
   }
 
-  // GET /api/user/me
+  // GET CURRENT USER
   static Future<Map<String, dynamic>> getCurrentUser() async {
     final token = await getToken();
-    if (token == null) {
-      throw Exception('Not authenticated. Please login again.');
-    }
+    if (token == null) throw Exception('Not authenticated. Please login again.');
 
     final url = Uri.parse('$baseUrl/api/user/me');
 
@@ -218,9 +191,7 @@ class ApiService {
 
     final response = await http.get(
       url,
-      headers: {
-        'Authorization': 'Bearer $token',
-      },
+      headers: {'Authorization': 'Bearer $token'},
     );
 
     print('GET ME status: ${response.statusCode}');
@@ -229,12 +200,16 @@ class ApiService {
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final data = jsonDecode(response.body);
       if (data is Map<String, dynamic>) {
-        return data;
+        // handle both { ... } and { data: { ... } } shapes
+        if (data.containsKey('data') && data['data'] is Map<String, dynamic>) {
+          return Map<String, dynamic>.from(data['data']);
+        }
+        return Map<String, dynamic>.from(data);
       } else {
         throw Exception('Unexpected response format from /me');
       }
-    } else {
-      throw Exception(_extractErrorMessage(response));
     }
+
+    throw Exception(_extractErrorMessage(response));
   }
 }

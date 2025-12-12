@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class GetStartedScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black, // Ensure the background is black
+      backgroundColor: Colors.black,
       body: Column(
         children: [
           Expanded(
-            flex: 1, // Set to 1 for a 50/50 split
+            flex: 1,
             child: Stack(
               children: [
                 Positioned.fill(
                   child: Image.asset(
-                    'assets/Image_1.png', // Kept your original Image.asset
+                    'assets/Image_1.png',
                     fit: BoxFit.cover,
                   ),
                 ),
@@ -39,9 +40,9 @@ class GetStartedScreen extends StatelessWidget {
             ),
           ),
           Expanded(
-            flex: 1, // Set to 1 for a 50/50 split
+            flex: 1,
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6.0), // Reverted to your original padding
+              padding: const EdgeInsets.symmetric(horizontal: 6.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -81,9 +82,11 @@ class GetStartedScreen extends StatelessWidget {
                   ),
                   Spacer(flex: 1),
                   TextButton(
-                    onPressed: () {
-                      // This is the only change: navigates to the login screen
-                      Navigator.pushNamed(context, '/login');
+                    onPressed: () async {
+                      final prefs = await SharedPreferences.getInstance();
+                      await prefs.setBool('seen_get_started', true);
+                      // navigate to login and remove GetStarted from stack
+                      Navigator.pushReplacementNamed(context, '/login');
                     },
                     style: TextButton.styleFrom(
                       padding: EdgeInsets.zero,
@@ -119,4 +122,3 @@ class GetStartedScreen extends StatelessWidget {
     );
   }
 }
-
