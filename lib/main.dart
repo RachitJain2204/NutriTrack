@@ -1,11 +1,14 @@
+// lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:nutri_track/Main_Nav_Screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:nutri_track/Details_Screen.dart';
-import 'package:nutri_track/Login%20and%20Sign%20Up/Login_Screen.dart';
 import 'package:nutri_track/Get_Started_Screen.dart';
+import 'package:nutri_track/Login%20and%20Sign%20Up/Login_Screen.dart';
 import 'package:nutri_track/Login%20and%20Sign%20Up/Sign_Up_Screen.dart';
-import 'package:nutri_track/Meal_Screen.dart';
+import 'package:nutri_track/Details_Screen.dart';
 import 'package:nutri_track/Profile.dart';
+import 'package:nutri_track/Meal_Screen.dart';
+import 'package:nutri_track/Splash_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -15,17 +18,6 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  Future<Map<String, dynamic>> _decideStartup() async {
-    final prefs = await SharedPreferences.getInstance();
-    final seen = prefs.getBool('seen_get_started') ?? false;
-    final token = prefs.getString('auth_token');
-    // return a small map that the FutureBuilder will use
-    return {
-      'seen': seen,
-      'token': token,
-    };
-  }
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -33,43 +25,20 @@ class MyApp extends StatelessWidget {
       theme: ThemeData.dark().copyWith(
         scaffoldBackgroundColor: Colors.black,
         primaryColor: const Color(0xFFE6A70B),
-        radioTheme: RadioThemeData(
-          fillColor: MaterialStateProperty.all(const Color(0xFF6ABF4B)),
-        ),
+        radioTheme: RadioThemeData(fillColor: MaterialStateProperty.all(const Color(0xFF6ABF4B))),
       ),
       debugShowCheckedModeBanner: false,
-      // we'll use home and a FutureBuilder to decide which screen to show
-      home: FutureBuilder<Map<String, dynamic>>(
-        future: _decideStartup(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
-            );
-          }
-
-          final data = snapshot.data ?? {};
-          final bool seen = data['seen'] ?? false;
-          final String? token = data['token'];
-
-          if (!seen) {
-            return GetStartedScreen();
-          }
-
-          if (token != null && token.isNotEmpty) {
-            return const FoodImageUploadScreen();
-          }
-
-          return const LoginScreen();
-        },
-      ),
+      // Start instantly on SplashScreen which will redirect quickly
+      initialRoute: '/splash',
       routes: {
-        '/': (context) => GetStartedScreen(),
-        '/login': (context) => const LoginScreen(),
-        '/signup': (context) => const SignUpScreen(),
-        '/details': (context) => const DetailsScreen(),
-        '/profile': (context) => const ProfileScreen(),
-        '/meal': (context) => const FoodImageUploadScreen(),
+        '/splash': (c) => const SplashScreen(),
+        '/': (c) => GetStartedScreen(),
+        '/login': (c) => const LoginScreen(),
+        '/signup': (c) => const SignUpScreen(),
+        '/details': (c) => const DetailsScreen(),
+        '/profile': (c) => const ProfileScreen(),
+        '/meal': (c) => const FoodImageUploadScreen(),
+        '/app': (c) => const MainNavScreen(),
       },
     );
   }

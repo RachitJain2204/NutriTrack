@@ -1,6 +1,8 @@
 // FoodImageUploadScreen.dart
-// Complete file — robust parsing of JSON / SSE and improved debug info.
+// Complete updated file with rotating upload messages (no emojis),
+// changes message every 4 seconds while uploading.
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
@@ -32,8 +34,22 @@ class _FoodImageUploadScreenState extends State<FoodImageUploadScreen> {
   final Color _nutriGreen = const Color(0xFF6ABF4B);
   final String uploadUrl = 'https://nutritrack-backend-lghm.onrender.com/api/upload-image';
 
+  // Rotating messages (no emojis)
+  final List<String> funMessages = [
+    "Your food looks so yummy our system paused to drool…",
+    "Hold on… our AI chef is taking a bite first",
+    "Wow! That dish distracted our system for a second",
+    "Processing… your food's deliciousness is overwhelming",
+    "Just a moment… our AI is daydreaming about your food",
+    "Your food is causing a mini hunger strike inside the server",
+  ];
+
+  int _currentMessageIndex = 0;
+  Timer? _messageTimer;
+
   @override
   void dispose() {
+    _messageTimer?.cancel();
     super.dispose();
   }
 
@@ -57,18 +73,40 @@ class _FoodImageUploadScreenState extends State<FoodImageUploadScreen> {
     }
   }
 
+  void _startMessageRotation() {
+    _messageTimer?.cancel();
+    _currentMessageIndex = 0;
+    setState(() {
+      _error = funMessages[_currentMessageIndex];
+    });
+    _messageTimer = Timer.periodic(const Duration(seconds: 4), (timer) {
+      setState(() {
+        _currentMessageIndex = (_currentMessageIndex + 1) % funMessages.length;
+        _error = funMessages[_currentMessageIndex];
+      });
+    });
+  }
+
+  void _stopMessageRotation() {
+    _messageTimer?.cancel();
+    _messageTimer = null;
+  }
+
   Future<void> _uploadImage() async {
     if (_selectedImage == null) return;
 
     setState(() {
       _isUploading = true;
-      _error = null;
+      // clear previous results
       foodName = null;
       calories = null;
       protein = null;
       carbs = null;
       fat = null;
     });
+
+    // start rotating friendly messages
+    _startMessageRotation();
 
     try {
       final file = _selectedImage!;
@@ -83,7 +121,7 @@ class _FoodImageUploadScreenState extends State<FoodImageUploadScreen> {
       final request = http.MultipartRequest('POST', uri);
 
       final multipartFile = http.MultipartFile.fromBytes(
-        'file', // must match backend @RequestPart / param name
+        'file',
         fileBytes,
         filename: fileName.isNotEmpty ? fileName : 'file.jpg',
         contentType: contentType,
@@ -92,13 +130,14 @@ class _FoodImageUploadScreenState extends State<FoodImageUploadScreen> {
       request.files.add(multipartFile);
       request.headers['Accept'] = 'text/event-stream, application/json, text/plain, */*';
 
-      setState(() => _error = 'Your food looks so yummy that our system took a moment to admire it...');
-
       final streamedResp = await request.send().timeout(const Duration(seconds: 90));
       final respStr = await streamedResp.stream.bytesToString();
 
       if (streamedResp.statusCode < 200 || streamedResp.statusCode >= 300) {
-        setState(() => _error = 'Server returned status ${streamedResp.statusCode}:\n$respStr');
+        _stopMessageRotation();
+        setState(() {
+          _error = 'Server returned status ${streamedResp.statusCode}:\n$respStr';
+        });
         return;
       }
 
@@ -122,15 +161,23 @@ class _FoodImageUploadScreenState extends State<FoodImageUploadScreen> {
               throw Exception('No JSON-like substring found');
             }
           } catch (e3) {
+            _stopMessageRotation();
             setState(() => _error = 'Failed to parse server response:\n1) jsonDecode: $e\n2) sseParse: $e2\n3) substringParse: $e3\n\nRaw response:\n$respStr');
             return;
           }
         }
       }
 
+      // parsing succeeded — stop rotating messages and clear the message box
+      _stopMessageRotation();
+      setState(() => _error = null);
+
+      // hand off parsed data for UI update
       _parseResponse(decoded);
+
       _showSnackBar('Analysis completed', success: true);
     } catch (e) {
+      _stopMessageRotation();
       setState(() => _error = 'Upload failed: $e');
     } finally {
       if (mounted) setState(() => _isUploading = false);
@@ -530,6 +577,7 @@ class _FoodImageUploadScreenState extends State<FoodImageUploadScreen> {
                         ),
                         const SizedBox(height: 20),
                       ],
+
                       const SizedBox(height: 20),
                     ],
                   ),

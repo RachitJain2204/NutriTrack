@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_track/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nutri_track/services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -16,6 +16,8 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _passwordVisible = false;
   bool _isLoading = false;
 
+  final Color _nutriGreen = const Color(0xFF6ABF4B);
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -27,7 +29,7 @@ class _LoginScreenState extends State<LoginScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? const Color(0xFF6ABF4B) : Colors.green,
+        backgroundColor: isError ? Colors.redAccent : _nutriGreen,
       ),
     );
   }
@@ -45,12 +47,14 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       await ApiService.login(email: email, password: password);
 
+      // mark onboarding seen (so GetStarted won't show next time)
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('seen_get_started', true);
 
       _showSnackBar('Login successful', isError: false);
 
-      Navigator.pushReplacementNamed(context, '/profile');
+      // go to main app and clear backstack
+      Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
     } catch (e) {
       _showSnackBar(e.toString());
     } finally {
@@ -59,7 +63,6 @@ class _LoginScreenState extends State<LoginScreen> {
       }
     }
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -154,9 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _passwordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
+                      _passwordVisible ? Icons.visibility : Icons.visibility_off,
                       color: Colors.white70,
                     ),
                     onPressed: () {
@@ -207,8 +208,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
                     : const Text(

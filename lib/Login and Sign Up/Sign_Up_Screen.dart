@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nutri_track/services/api_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:nutri_track/services/api_service.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -18,6 +18,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
   bool _confirmPasswordVisible = false;
   bool _isLoading = false;
 
+  final Color _nutriGreen = const Color(0xFF6ABF4B);
+
   @override
   void dispose() {
     _emailController.dispose();
@@ -30,7 +32,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: isError ? const Color(0xFF6ABF4B) : Colors.green,
+        backgroundColor: isError ? Colors.redAccent : _nutriGreen,
       ),
     );
   }
@@ -72,19 +74,21 @@ class _SignUpScreenState extends State<SignUpScreen> {
     }
 
     setState(() => _isLoading = true);
-
     try {
+      // 1) Register user
       await ApiService.register(email: email, password: password);
 
+      // 2) Immediately login to get token
       await ApiService.login(email: email, password: password);
 
-      // mark onboarding screen as seen
+      // mark onboarding seen (so GetStarted won't show next time)
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('seen_get_started', true);
 
       _showSnackBar('Account created and logged in', isError: false);
 
-      Navigator.pushReplacementNamed(context, '/details');
+      // 3) Navigate to main app and clear backstack
+      Navigator.pushNamedAndRemoveUntil(context, '/app', (route) => false);
     } catch (e) {
       _showSnackBar(e.toString());
     } finally {
@@ -191,9 +195,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _passwordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
+                      _passwordVisible ? Icons.visibility : Icons.visibility_off,
                       color: Colors.white70,
                     ),
                     onPressed: () {
@@ -225,9 +227,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   ),
                   suffixIcon: IconButton(
                     icon: Icon(
-                      _confirmPasswordVisible
-                          ? Icons.visibility
-                          : Icons.visibility_off,
+                      _confirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
                       color: Colors.white70,
                     ),
                     onPressed: () {
@@ -261,8 +261,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   width: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor:
-                    AlwaysStoppedAnimation<Color>(Colors.white),
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                 )
                     : const Text(
